@@ -71,22 +71,58 @@ type MapRouteNodesToPathes<
       ]
   : AccRoutes;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const routes = [
+type Tree = [
   {
-    path: "/",
+    path: "/";
     children: [
-      { index: true },
+      { index: true; },
       {
-        path: "courses",
-        children: [{ index: true }, { path: ":id" }],
-      },
-    ],
-  },
-] as const satisfies RouteObject[];
+        path: "courses";
+        children: [
+          { index: true; },
+          { path: ":id"; }
+        ];
+      }
+    ];
+  }
+];
 
-export type RoutesTree = typeof routes;
-export type Routes = MapRouteNodesToPathes<RoutesTree>[number];
+export type ModifyTreeNodes<
+  T extends RouteObject[],
+  Modifier extends Record<string, unknown>,
+  AccResult extends (RouteObject & Modifier)[] = []
+> = T extends [
+  infer First extends RouteObject,
+  ...infer Rest extends RouteObject[]
+]
+  ? Rest["length"] extends 0
+    ? First extends { children: RouteObject[] }
+      ? [
+          ...AccResult,
+          (First & {
+            children: ModifyTreeNodes<First["children"], Modifier>;
+          }) &
+            Modifier
+        ]
+      : [...AccResult, First & Modifier]
+    : First extends { children: RouteObject[] }
+    ? ModifyTreeNodes<
+        Rest,
+        Modifier,
+        [
+          ...AccResult,
+          (First & {
+            children: ModifyTreeNodes<First["children"], Modifier>;
+          }) &
+            Modifier
+        ]
+      >
+    : ModifyTreeNodes<Rest, Modifier, [...AccResult, First & Modifier]>
+  : AccResult;
+
+export type RoutesTree<Modifiers extends Record<string | number | symbol, unknown>> = ModifyTreeNodes<Tree, Modifiers>;
+
+export type Routes = MapRouteNodesToPathes<Tree>[number];
 
 const isTokenInParams = <T extends Routes>(
   token: string | number | symbol,
