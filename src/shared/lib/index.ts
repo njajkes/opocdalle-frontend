@@ -5,3 +5,5 @@ export {
   InternalRouterProvider,
   useInternalRouter,
 } from "./routes";
+
+export { cn } from "./cn";
